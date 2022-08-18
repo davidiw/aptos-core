@@ -39,10 +39,8 @@ module aptos_framework::account {
         module_name: vector<u8>,
         script_prologue_name: vector<u8>,
         module_prologue_name: vector<u8>,
-        writeset_prologue_name: vector<u8>,
         multi_agent_prologue_name: vector<u8>,
         user_epilogue_name: vector<u8>,
-        writeset_epilogue_name: vector<u8>,
     }
 
     struct CapabilityOffer<phantom T> has store { for: Option<address> }
@@ -112,10 +110,8 @@ module aptos_framework::account {
         module_name: vector<u8>,
         script_prologue_name: vector<u8>,
         module_prologue_name: vector<u8>,
-        writeset_prologue_name: vector<u8>,
         multi_agent_prologue_name: vector<u8>,
         user_epilogue_name: vector<u8>,
-        writeset_epilogue_name: vector<u8>,
     ) {
         system_addresses::assert_aptos_framework(account);
 
@@ -124,10 +120,8 @@ module aptos_framework::account {
             module_name,
             script_prologue_name,
             module_prologue_name,
-            writeset_prologue_name,
             multi_agent_prologue_name,
             user_epilogue_name,
-            writeset_epilogue_name,
         });
     }
 
@@ -322,16 +316,6 @@ module aptos_framework::account {
         prologue_common(sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units, txn_expiration_time, chain_id)
     }
 
-    fun writeset_prologue(
-        _sender: signer,
-        _txn_sequence_number: u64,
-        _txn_public_key: vector<u8>,
-        _txn_expiration_time: u64,
-        _chain_id: u8,
-    ) {
-        assert!(false, error::invalid_argument(PROLOGUE_EINVALID_WRITESET_SENDER));
-    }
-
     fun multi_agent_script_prologue(
         sender: signer,
         txn_sequence_number: u64,
@@ -365,14 +349,6 @@ module aptos_framework::account {
             );
             i = i + 1;
         }
-    }
-
-    fun writeset_epilogue(
-        _core_resource: signer,
-        _txn_sequence_number: u64,
-        _should_trigger_reconfiguration: bool,
-    ) {
-        assert!(false, error::invalid_argument(EWRITESET_NOT_ALLOWED));
     }
 
     /// Epilogue function is run after a transaction is successfully executed.
