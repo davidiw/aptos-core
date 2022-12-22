@@ -9,6 +9,7 @@ pub mod cryptography;
 pub mod event;
 pub mod hash;
 mod helpers;
+pub mod object;
 pub mod state_storage;
 pub mod transaction_context;
 pub mod type_info;
@@ -201,7 +202,7 @@ pub fn all_natives(
 
     add_natives_from_module!("account", account::make_all(gas_params.account.clone()));
     add_natives_from_module!("ed25519", ed25519::make_all(gas_params.ed25519.clone()));
-    add_natives_from_module!("genesis", account::make_all(gas_params.account));
+    add_natives_from_module!("genesis", account::make_all(gas_params.account.clone()));
     add_natives_from_module!("multi_ed25519", multi_ed25519::make_all(gas_params.ed25519));
     add_natives_from_module!(
         "bls12381",
@@ -216,6 +217,7 @@ pub fn all_natives(
         "ristretto255",
         cryptography::ristretto255::make_all(gas_params.ristretto255)
     );
+    add_natives_from_module!("object", object::make_all(gas_params.account));
     add_natives_from_module!("type_info", type_info::make_all(gas_params.type_info));
     add_natives_from_module!("util", util::make_all(gas_params.util.clone()));
     add_natives_from_module!("from_bcs", util::make_all(gas_params.util));
