@@ -6,13 +6,13 @@
 This defines a proposed Aptos object model with the intent to provide the following properties:
 * Decouple data from ownership
 * Objects are stored as resources within an account
-* OwnerAbility defines ownership of an object
+* OwnerRef defines ownership of an object
 * Heterogeneous types stored in a single container
 * Decoupled data from ownership allows or ownership to be to an ambiguous type
 * Ambiguous types can be homogeneous thus bypassing restrictions on heterogeneous collections
 * Make data immobile, while making ownership of data flexible
 * Resources cannot be easily moved without explicit permission by the module that defines them
-* OwnerAbility has no restrictions where it flows
+* OwnerRef has no restrictions where it flows
 * This allows for a creator to always managed all objects created by them
 * Data is globally accessible
 * Data resides in resources which cannot be moved and therefore are always accessible
@@ -43,7 +43,7 @@ We are currently exploring a concept of storage groups that will allow structs m
 * There is no means to borrow an object or a reference to an object. We are exploring how to
 make it so that a reference to a global object can be returned from a function.
 * There's no guarantee of correctness or consistency in object implementation. For example,
-the API for generating a TypedOwnerAbility can differ from object to object. An object
+the API for generating a TypedOwnerRef can differ from object to object. An object
 could potentially be left in a partially deleted state. We are exploring interfaces that
 would allow for calling functions on module, type pairs that implement certain functions.
 * The ownership model allows for richer defintion of access control, such as specifying when
@@ -54,11 +54,12 @@ for their owned objects.
 
 
 -  [Resource `Object`](#0x1_object_Object)
--  [Struct `CreatorAbility`](#0x1_object_CreatorAbility)
--  [Struct `DeleteAbility`](#0x1_object_DeleteAbility)
--  [Struct `SignerAbility`](#0x1_object_SignerAbility)
--  [Struct `OwnerAbility`](#0x1_object_OwnerAbility)
--  [Struct `TypedOwnerAbility`](#0x1_object_TypedOwnerAbility)
+-  [Struct `ObjectGroup`](#0x1_object_ObjectGroup)
+-  [Struct `CreatorRef`](#0x1_object_CreatorRef)
+-  [Struct `DeleteRef`](#0x1_object_DeleteRef)
+-  [Struct `SignerRef`](#0x1_object_SignerRef)
+-  [Struct `OwnerRef`](#0x1_object_OwnerRef)
+-  [Struct `TypedOwnerRef`](#0x1_object_TypedOwnerRef)
 -  [Resource `ObjectStore`](#0x1_object_ObjectStore)
 -  [Struct `DepositEvent`](#0x1_object_DepositEvent)
 -  [Struct `WithdrawEvent`](#0x1_object_WithdrawEvent)
@@ -72,6 +73,7 @@ for their owned objects.
 -  [Function `create_object`](#0x1_object_create_object)
 -  [Function `create_guid`](#0x1_object_create_guid)
 -  [Function `generate_delete_ability`](#0x1_object_generate_delete_ability)
+-  [Function `delete_ability_address`](#0x1_object_delete_ability_address)
 -  [Function `delete`](#0x1_object_delete)
 -  [Function `new_event_handle`](#0x1_object_new_event_handle)
 -  [Function `create_signer_internal`](#0x1_object_create_signer_internal)
@@ -125,14 +127,41 @@ for their owned objects.
 
 </details>
 
-<a name="0x1_object_CreatorAbility"></a>
+<a name="0x1_object_ObjectGroup"></a>
 
-## Struct `CreatorAbility`
+## Struct `ObjectGroup`
+
+
+
+<pre><code><b>struct</b> <a href="object.md#0x1_object_ObjectGroup">ObjectGroup</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dummy_field: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_object_CreatorRef"></a>
+
+## Struct `CreatorRef`
 
 This is a one time ability given to the creator to configure the object as necessary
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a> <b>has</b> drop
+<pre><code><b>struct</b> <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> <b>has</b> drop
 </code></pre>
 
 
@@ -153,14 +182,14 @@ This is a one time ability given to the creator to configure the object as neces
 
 </details>
 
-<a name="0x1_object_DeleteAbility"></a>
+<a name="0x1_object_DeleteRef"></a>
 
-## Struct `DeleteAbility`
+## Struct `DeleteRef`
 
 The owner of this ability can delete an object
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_DeleteAbility">DeleteAbility</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -181,14 +210,14 @@ The owner of this ability can delete an object
 
 </details>
 
-<a name="0x1_object_SignerAbility"></a>
+<a name="0x1_object_SignerRef"></a>
 
-## Struct `SignerAbility`
+## Struct `SignerRef`
 
 The owner of this ability can generate the object's signer
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_SignerAbility">SignerAbility</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_SignerRef">SignerRef</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -209,14 +238,14 @@ The owner of this ability can generate the object's signer
 
 </details>
 
-<a name="0x1_object_OwnerAbility"></a>
+<a name="0x1_object_OwnerRef"></a>
 
-## Struct `OwnerAbility`
+## Struct `OwnerRef`
 
 This implies that this individual owns this object
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -237,14 +266,14 @@ This implies that this individual owns this object
 
 </details>
 
-<a name="0x1_object_TypedOwnerAbility"></a>
+<a name="0x1_object_TypedOwnerRef"></a>
 
-## Struct `TypedOwnerAbility`
+## Struct `TypedOwnerRef`
 
 This implies that the individual owns this object and it contains a specific type / resource
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a>&lt;T: key&gt; <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T: key&gt; <b>has</b> drop, store
 </code></pre>
 
 
@@ -282,7 +311,7 @@ This implies that the individual owns this object and it contains a specific typ
 
 <dl>
 <dt>
-<code>inner: <a href="../../aptos-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<b>address</b>, <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>&gt;</code>
+<code>inner: <a href="../../aptos-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<b>address</b>, <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>&gt;</code>
 </dt>
 <dd>
 
@@ -401,7 +430,7 @@ address.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -410,7 +439,7 @@ address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <b>move_to</b>(
         <a href="account.md#0x1_account">account</a>,
         <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
@@ -432,7 +461,7 @@ address.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
 </code></pre>
 
 
@@ -441,7 +470,7 @@ address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
     <b>let</b> object_store = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_ObjectStore">ObjectStore</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> object_store.withdraws, <a href="object.md#0x1_object_WithdrawEvent">WithdrawEvent</a> { object_id: addr });
     <a href="../../aptos-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> object_store.inner, addr)
@@ -458,7 +487,7 @@ address.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>)
 </code></pre>
 
 
@@ -467,7 +496,7 @@ address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a>) <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerRef">OwnerRef</a>) <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
     <b>let</b> object_store = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_ObjectStore">ObjectStore</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
     <b>let</b> object_addr = <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(&<a href="object.md#0x1_object">object</a>);
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> object_store.deposits, <a href="object.md#0x1_object_DepositEvent">DepositEvent</a> { object_id: object_addr });
@@ -485,7 +514,7 @@ address.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit_typed">deposit_typed</a>&lt;T: key&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerAbility">object::TypedOwnerAbility</a>&lt;T&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit_typed">deposit_typed</a>&lt;T: key&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -496,7 +525,7 @@ address.
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit_typed">deposit_typed</a>&lt;T: key&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a>&lt;T&gt;,
+    <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;,
 ) <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
     <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>, <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>(<a href="object.md#0x1_object">object</a>))
 }
@@ -565,7 +594,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorAbility">object::CreatorAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
 </code></pre>
 
 
@@ -574,7 +603,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
     // create <a href="object.md#0x1_object">object</a> <b>address</b> needs <b>to</b> be distinct from create_resource_address
     <b>let</b> <b>address</b> = <a href="object.md#0x1_object_create_object_id">create_object_id</a>(&<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator), seed);
     <b>assert</b>!(!<b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(<b>address</b>), <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="object.md#0x1_object_EOBJECT_EXISTS">EOBJECT_EXISTS</a>));
@@ -586,7 +615,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
             guid_creation_num: 0,
         },
     );
-    <a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a> { self: <b>address</b> }
+    <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> { self: <b>address</b> }
 }
 </code></pre>
 
@@ -626,7 +655,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">object::CreatorAbility</a>): <a href="object.md#0x1_object_DeleteAbility">object::DeleteAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>
 </code></pre>
 
 
@@ -635,8 +664,32 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a>): <a href="object.md#0x1_object_DeleteAbility">DeleteAbility</a> {
-    <a href="object.md#0x1_object_DeleteAbility">DeleteAbility</a> { self: ability.self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> {
+    <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> { self: ability.self }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_delete_ability_address"></a>
+
+## Function `delete_ability_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ability_address">delete_ability_address</a>(ability: &<a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ability_address">delete_ability_address</a>(ability: &<a href="object.md#0x1_object_DeleteRef">DeleteRef</a>): <b>address</b> {
+    ability.self
 }
 </code></pre>
 
@@ -650,7 +703,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteAbility">object::DeleteAbility</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>)
 </code></pre>
 
 
@@ -659,7 +712,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteAbility">DeleteAbility</a>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteRef">DeleteRef</a>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
     <b>let</b> <a href="object.md#0x1_object">object</a> = <b>move_from</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(ability.self);
     <b>let</b> <a href="object.md#0x1_object_Object">Object</a> {
         guid_creation_num: _,
@@ -725,7 +778,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">object::CreatorAbility</a>): <a href="object.md#0x1_object_SignerAbility">object::SignerAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_SignerRef">object::SignerRef</a>
 </code></pre>
 
 
@@ -734,8 +787,8 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a>): <a href="object.md#0x1_object_SignerAbility">SignerAbility</a> {
-    <a href="object.md#0x1_object_SignerAbility">SignerAbility</a> { self: ability.self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_SignerRef">SignerRef</a> {
+    <a href="object.md#0x1_object_SignerRef">SignerRef</a> { self: ability.self }
 }
 </code></pre>
 
@@ -749,7 +802,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerAbility">object::SignerAbility</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerRef">object::SignerRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
 </code></pre>
 
 
@@ -758,7 +811,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerAbility">SignerAbility</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerRef">SignerRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
     <a href="object.md#0x1_object_create_signer_internal">create_signer_internal</a>(ability.self)
 }
 </code></pre>
@@ -773,7 +826,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">object::CreatorAbility</a>): <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
 </code></pre>
 
 
@@ -782,8 +835,8 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorAbility">CreatorAbility</a>): <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> {
-    <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> { self: ability.self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> {
+    <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self: ability.self }
 }
 </code></pre>
 
@@ -797,7 +850,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>): <b>address</b>
 </code></pre>
 
 
@@ -806,7 +859,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a>): <b>address</b> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerRef">OwnerRef</a>): <b>address</b> {
     ability.self
 }
 </code></pre>
@@ -821,7 +874,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerAbility">object::TypedOwnerAbility</a>&lt;T&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;): <b>address</b>
 </code></pre>
 
 
@@ -830,7 +883,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a>&lt;T&gt;): <b>address</b> {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;): <b>address</b> {
     ability.self
 }
 </code></pre>
@@ -845,7 +898,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerAbility">object::TypedOwnerAbility</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -854,9 +907,9 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a>&lt;T&gt; {
-    <b>let</b> <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> { self } = ability;
-    <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a> { self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerRef">OwnerRef</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt; {
+    <b>let</b> <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self } = ability;
+    <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a> { self }
 }
 </code></pre>
 
@@ -870,7 +923,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerAbility">object::TypedOwnerAbility</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerAbility">object::OwnerAbility</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
 </code></pre>
 
 
@@ -879,9 +932,9 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> {
-    <b>let</b> <a href="object.md#0x1_object_TypedOwnerAbility">TypedOwnerAbility</a> { self } = ability;
-    <a href="object.md#0x1_object_OwnerAbility">OwnerAbility</a> { self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> {
+    <b>let</b> <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a> { self } = ability;
+    <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self }
 }
 </code></pre>
 

@@ -1,13 +1,13 @@
 /// This defines a proposed Aptos object model with the intent to provide the following properties:
 /// * Decouple data from ownership
 ///   * Objects are stored as resources within an account
-///   * OwnerAbility defines ownership of an object
+///   * OwnerRef defines ownership of an object
 /// * Heterogeneous types stored in a single container
 ///   * Decoupled data from ownership allows or ownership to be to an ambiguous type
 ///   * Ambiguous types can be homogeneous thus bypassing restrictions on heterogeneous collections
 /// * Make data immobile, while making ownership of data flexible
 ///   * Resources cannot be easily moved without explicit permission by the module that defines them
-///   * OwnerAbility has no restrictions where it flows
+///   * OwnerRef has no restrictions where it flows
 ///   * This allows for a creator to always managed all objects created by them
 /// * Data is globally accessible
 ///   * Data resides in resources which cannot be moved and therefore are always accessible
@@ -38,7 +38,7 @@
 /// * There is no means to borrow an object or a reference to an object. We are exploring how to
 ///   make it so that a reference to a global object can be returned from a function.
 /// * There's no guarantee of correctness or consistency in object implementation. For example,
-///   the API for generating a TypedOwnerAbility can differ from object to object. An object
+///   the API for generating a TypedOwnerRef can differ from object to object. An object
 ///   could potentially be left in a partially deleted state. We are exploring interfaces that
 ///   would allow for calling functions on module, type pairs that implement certain functions.
 /// * The ownership model allows for richer defintion of access control, such as specifying when
@@ -70,38 +70,42 @@ module aptos_framework::object {
     /// address.
     const OBJECT_ADDRESS_SCHEME: u8 = 0xFE;
 
+    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Object has key {
         guid_creation_num: u64,
     }
 
+    #[resource_group(scope = global)]
+    struct ObjectGroup { }
+
     /// This is a one time ability given to the creator to configure the object as necessary
-    struct CreatorAbility has drop {
+    struct CreatorRef has drop {
         self: address,
     }
 
     /// The owner of this ability can delete an object
-    struct DeleteAbility has copy, drop, store {
+    struct DeleteRef has copy, drop, store {
         self: address,
     }
 
     /// The owner of this ability can generate the object's signer
-    struct SignerAbility has copy, drop, store {
+    struct SignerRef has copy, drop, store {
         self: address,
     }
 
     /// This implies that this individual owns this object
-    struct OwnerAbility has drop, store {
+    struct OwnerRef has drop, store {
         self: address,
     }
 
     /// This implies that the individual owns this object and it contains a specific type / resource
-    struct TypedOwnerAbility<phantom T: key> has drop, store {
+    struct TypedOwnerRef<phantom T: key> has drop, store {
         self: address,
     }
 
     // This is heterogeneous store of owned objects
     struct ObjectStore has key {
-        inner: table::Table<address, OwnerAbility>,
+        inner: table::Table<address, OwnerRef>,
         deposits: event::EventHandle<DepositEvent>,
         withdraws: event::EventHandle<WithdrawEvent>,
     }
@@ -114,7 +118,7 @@ module aptos_framework::object {
         object_id: address,
     }
 
-    public fun init_store(account: &signer) {
+    public entry fun init_store(account: &signer) {
         move_to(
             account,
             ObjectStore {
@@ -125,13 +129,13 @@ module aptos_framework::object {
         )
     }
 
-    public fun withdraw(account: &signer, addr: address): OwnerAbility acquires ObjectStore {
+    public fun withdraw(account: &signer, addr: address): OwnerRef acquires ObjectStore {
         let object_store = borrow_global_mut<ObjectStore>(signer::address_of(account));
         event::emit_event(&mut object_store.withdraws, WithdrawEvent { object_id: addr });
         table::remove(&mut object_store.inner, addr)
     }
 
-    public fun deposit(account: &signer, object: OwnerAbility) acquires ObjectStore {
+    public fun deposit(account: &signer, object: OwnerRef) acquires ObjectStore {
         let object_store = borrow_global_mut<ObjectStore>(signer::address_of(account));
         let object_addr = owner_ability_address(&object);
         event::emit_event(&mut object_store.deposits, DepositEvent { object_id: object_addr });
@@ -140,7 +144,7 @@ module aptos_framework::object {
 
     public fun deposit_typed<T: key>(
         account: &signer,
-        object: TypedOwnerAbility<T>,
+        object: TypedOwnerRef<T>,
     ) acquires ObjectStore {
         deposit(account, to_owner_ability(object))
     }
@@ -158,7 +162,7 @@ module aptos_framework::object {
         from_bcs::to_address(hash::sha3_256(bytes))
     }
 
-    public fun create_object(creator: &signer, seed: vector<u8>): CreatorAbility {
+    public fun create_object(creator: &signer, seed: vector<u8>): CreatorRef {
         // create object address needs to be distinct from create_resource_address
         let address = create_object_id(&signer::address_of(creator), seed);
         assert!(!exists<Object>(address), error::already_exists(EOBJECT_EXISTS));
@@ -170,7 +174,7 @@ module aptos_framework::object {
                 guid_creation_num: 0,
             },
         );
-        CreatorAbility { self: address }
+        CreatorRef { self: address }
     }
 
     public fun create_guid(object: &signer): guid::GUID acquires Object {
@@ -179,11 +183,15 @@ module aptos_framework::object {
         guid::create(addr, &mut object_data.guid_creation_num)
     }
 
-    public fun generate_delete_ability(ability: &CreatorAbility): DeleteAbility {
-        DeleteAbility { self: ability.self }
+    public fun generate_delete_ability(ability: &CreatorRef): DeleteRef {
+        DeleteRef { self: ability.self }
     }
 
-    public fun delete(ability: DeleteAbility) acquires Object {
+    public fun delete_ability_address(ability: &DeleteRef): address {
+        ability.self
+    }
+
+    public fun delete(ability: DeleteRef) acquires Object {
         let object = move_from<Object>(ability.self);
         let Object {
             guid_creation_num: _,
@@ -198,34 +206,34 @@ module aptos_framework::object {
 
     native fun create_signer_internal(addr: address): signer;
 
-    public fun generate_signer_ability(ability: &CreatorAbility): SignerAbility {
-        SignerAbility { self: ability.self }
+    public fun generate_signer_ability(ability: &CreatorRef): SignerRef {
+        SignerRef { self: ability.self }
     }
 
-    public fun create_signer(ability: &SignerAbility): signer {
+    public fun create_signer(ability: &SignerRef): signer {
         create_signer_internal(ability.self)
     }
 
-    public fun generate_owner_ability(ability: &CreatorAbility): OwnerAbility {
-        OwnerAbility { self: ability.self }
+    public fun generate_owner_ability(ability: &CreatorRef): OwnerRef {
+        OwnerRef { self: ability.self }
     }
 
-    public fun owner_ability_address(ability: &OwnerAbility): address {
+    public fun owner_ability_address(ability: &OwnerRef): address {
         ability.self
     }
 
-    public fun typed_owner_ability_address<T: key>(ability: &TypedOwnerAbility<T>): address {
+    public fun typed_owner_ability_address<T: key>(ability: &TypedOwnerRef<T>): address {
         ability.self
     }
 
-    public fun to_typed_owner_ability<T: key>(ability: OwnerAbility, _t: &T): TypedOwnerAbility<T> {
-        let OwnerAbility { self } = ability;
-        TypedOwnerAbility { self }
+    public fun to_typed_owner_ability<T: key>(ability: OwnerRef, _t: &T): TypedOwnerRef<T> {
+        let OwnerRef { self } = ability;
+        TypedOwnerRef { self }
     }
 
-    public fun to_owner_ability<T: key>(ability: TypedOwnerAbility<T>): OwnerAbility {
-        let TypedOwnerAbility { self } = ability;
-        OwnerAbility { self }
+    public fun to_owner_ability<T: key>(ability: TypedOwnerRef<T>): OwnerRef {
+        let TypedOwnerRef { self } = ability;
+        OwnerRef { self }
     }
 
     #[test_only]
@@ -244,13 +252,13 @@ module aptos_framework::object {
     #[test_only]
     struct Hero has key {
         equip_events: event::EventHandle<HeroEquipEvent>,
-        weapon: option::Option<TypedOwnerAbility<Weapon>>,
+        weapon: option::Option<TypedOwnerRef<Weapon>>,
     }
 
     #[test_only]
     public fun hero_equip(
-        hero: &TypedOwnerAbility<Hero>,
-        weapon: TypedOwnerAbility<Weapon>,
+        hero: &TypedOwnerRef<Hero>,
+        weapon: TypedOwnerRef<Weapon>,
     ) acquires Hero {
         let hero = borrow_global_mut<Hero>(typed_owner_ability_address(hero));
         let weapon_id = typed_owner_ability_address(&weapon);
@@ -262,7 +270,7 @@ module aptos_framework::object {
     }
 
     #[test_only]
-    public fun create_hero(creator: &signer): TypedOwnerAbility<Hero> acquires Hero, Object {
+    public fun create_hero(creator: &signer): TypedOwnerRef<Hero> acquires Hero, Object {
         let hero_creator_ability = create_object(creator, b"hero");
         let hero_signer_ability = generate_signer_ability(&hero_creator_ability);
         let hero_signer = create_signer(&hero_signer_ability);
@@ -280,8 +288,8 @@ module aptos_framework::object {
 
     #[test_only]
     public fun to_hero_owner_ability(
-        ability: OwnerAbility,
-    ): TypedOwnerAbility<Hero> acquires Hero {
+        ability: OwnerRef,
+    ): TypedOwnerRef<Hero> acquires Hero {
         assert!(exists<Hero>(owner_ability_address(&ability)), EHERO_DOES_NOT_EXIST);
         let hero = borrow_global<Hero>(owner_ability_address(&ability));
         to_typed_owner_ability(ability, hero)
@@ -291,7 +299,7 @@ module aptos_framework::object {
     struct Weapon has key { }
 
     #[test_only]
-    public fun create_weapon(creator: &signer): TypedOwnerAbility<Weapon> acquires Weapon {
+    public fun create_weapon(creator: &signer): TypedOwnerRef<Weapon> acquires Weapon {
         let weapon_creator_ability = create_object(creator, b"weapon");
         let weapon_signer_ability = generate_signer_ability(&weapon_creator_ability);
         let weapon_signer = create_signer(&weapon_signer_ability);
@@ -302,8 +310,8 @@ module aptos_framework::object {
 
     #[test_only]
     public fun to_weapon_owner_ability(
-        ability: OwnerAbility,
-    ): TypedOwnerAbility<Weapon> acquires Weapon {
+        ability: OwnerRef,
+    ): TypedOwnerRef<Weapon> acquires Weapon {
         assert!(exists<Weapon>(owner_ability_address(&ability)), EWEAPON_DOES_NOT_EXIST);
         let weapon = borrow_global<Weapon>(owner_ability_address(&ability));
         to_typed_owner_ability(ability, weapon)

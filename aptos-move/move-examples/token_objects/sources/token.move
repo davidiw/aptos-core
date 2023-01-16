@@ -16,8 +16,9 @@ module token_objects::token {
     use std::signer;
     use std::vector;
 
-    use aptos_framework::object::{Self, CreatorAbility};
+    use aptos_framework::object::{Self, CreatorRef};
 
+    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// Represents the common fields to all tokens.
     struct Token has key {
         /// An optional categorization of similar token, there are no constraints on collections.
@@ -63,7 +64,7 @@ module token_objects::token {
         name: String,
         royalty: Royalty,
         uri: String,
-    ): CreatorAbility {
+    ): CreatorRef {
         let seed = create_token_id_seed(&collection, &name);
         // To keep costs down, this function does not check to see if the object already exists
         let creator_ability = object::create_object(creator, seed);
@@ -149,6 +150,37 @@ module token_objects::token {
 
         let owner_ability = object::generate_owner_ability(&creator_ability);
         object::deposit(creator, owner_ability);
+    }
+
+    public fun delete(ability: object::DeleteRef) acquires Token {
+        let token_id = object::delete_ability_address(&ability);
+        let token = move_from<Token>(token_id);
+        let Token {
+            collection: _,
+            creator: _,
+            description: _,
+            mutability_config: _,
+            name: _,
+            royalty: _,
+            uri: _,
+        } = token;
+        object::delete(ability);
+    }
+
+    public fun get_creator(token_id: address): address acquires Token {
+        let token = borrow_global<Token>(token_id);
+        token.creator
+    }
+
+    entry fun update_description(
+        creator: &signer,
+        collection: String,
+        name: String,
+        description: String
+    )  acquires Token {
+        let token_id = create_token_id(&signer::address_of(creator), &collection, &name);
+        let token = borrow_global_mut<Token>(token_id);
+        token.description = description;
     }
 
     #[test_only]

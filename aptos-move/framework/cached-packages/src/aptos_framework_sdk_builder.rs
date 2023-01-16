@@ -212,6 +212,8 @@ pub enum EntryFunctionCall {
         coin_type: TypeTag,
     },
 
+    ObjectInitStore {},
+
     /// Creates a new resource account and rotates the authentication key to either
     /// the optional auth key if it is non-empty (though auth keys are 32-bytes)
     /// or the source accounts current auth key.
@@ -613,6 +615,7 @@ impl EntryFunctionCall {
                 amount,
             } => managed_coin_mint(coin_type, dst_addr, amount),
             ManagedCoinRegister { coin_type } => managed_coin_register(coin_type),
+            ObjectInitStore {} => object_init_store(),
             ResourceAccountCreateResourceAccount {
                 seed,
                 optional_auth_key,
@@ -1305,6 +1308,21 @@ pub fn managed_coin_register(coin_type: TypeTag) -> TransactionPayload {
         ),
         ident_str!("register").to_owned(),
         vec![coin_type],
+        vec![],
+    ))
+}
+
+pub fn object_init_store() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1,
+            ]),
+            ident_str!("object").to_owned(),
+        ),
+        ident_str!("init_store").to_owned(),
+        vec![],
         vec![],
     ))
 }
@@ -2560,6 +2578,14 @@ mod decoder {
         }
     }
 
+    pub fn object_init_store(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::ObjectInitStore {})
+        } else {
+            None
+        }
+    }
+
     pub fn resource_account_create_resource_account(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -3232,6 +3258,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "managed_coin_register".to_string(),
             Box::new(decoder::managed_coin_register),
+        );
+        map.insert(
+            "object_init_store".to_string(),
+            Box::new(decoder::object_init_store),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),
