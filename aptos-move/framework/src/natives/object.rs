@@ -12,12 +12,12 @@ use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
 /***************************************************************************************************
- * native fun create_signer_internal
+ * native fun create_signer
  *
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-fn native_create_signer_internal(
+fn native_create_signer(
     gas_params: &CreateSignerGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -32,9 +32,9 @@ fn native_create_signer_internal(
     )]))
 }
 
-pub fn make_native_create_signer_internal(gas_params: CreateSignerGasParameters) -> NativeFunction {
+pub fn make_native_create_signer(gas_params: CreateSignerGasParameters) -> NativeFunction {
     Arc::new(move |context, ty_args, args| {
-        native_create_signer_internal(&gas_params, context, ty_args, args)
+        native_create_signer(&gas_params, context, ty_args, args)
     })
 }
 
@@ -44,8 +44,8 @@ pub fn make_native_create_signer_internal(gas_params: CreateSignerGasParameters)
  **************************************************************************************************/
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
-        "create_signer_internal",
-        make_native_create_signer_internal(gas_params.create_signer),
+        "create_signer",
+        make_native_create_signer(gas_params.create_signer),
     )];
 
     crate::natives::helpers::make_module_natives(natives)

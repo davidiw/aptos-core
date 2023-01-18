@@ -55,35 +55,42 @@ for their owned objects.
 
 -  [Resource `Object`](#0x1_object_Object)
 -  [Struct `ObjectGroup`](#0x1_object_ObjectGroup)
+-  [Struct `ObjectId`](#0x1_object_ObjectId)
 -  [Struct `CreatorRef`](#0x1_object_CreatorRef)
 -  [Struct `DeleteRef`](#0x1_object_DeleteRef)
--  [Struct `SignerRef`](#0x1_object_SignerRef)
--  [Struct `OwnerRef`](#0x1_object_OwnerRef)
--  [Struct `TypedOwnerRef`](#0x1_object_TypedOwnerRef)
--  [Resource `ObjectStore`](#0x1_object_ObjectStore)
--  [Struct `DepositEvent`](#0x1_object_DepositEvent)
--  [Struct `WithdrawEvent`](#0x1_object_WithdrawEvent)
+-  [Struct `ExtendRef`](#0x1_object_ExtendRef)
+-  [Struct `TransferRef`](#0x1_object_TransferRef)
+-  [Struct `LinearTransferRef`](#0x1_object_LinearTransferRef)
+-  [Struct `TransferEvent`](#0x1_object_TransferEvent)
 -  [Constants](#@Constants_0)
--  [Function `init_store`](#0x1_object_init_store)
--  [Function `withdraw`](#0x1_object_withdraw)
--  [Function `deposit`](#0x1_object_deposit)
--  [Function `deposit_typed`](#0x1_object_deposit_typed)
--  [Function `contains`](#0x1_object_contains)
 -  [Function `create_object_id`](#0x1_object_create_object_id)
--  [Function `create_object`](#0x1_object_create_object)
+-  [Function `derive_object_id`](#0x1_object_derive_object_id)
+-  [Function `object_id_address`](#0x1_object_object_id_address)
+-  [Function `create_named_object`](#0x1_object_create_named_object)
+-  [Function `create_object_from_account`](#0x1_object_create_object_from_account)
+-  [Function `create_object_from_object`](#0x1_object_create_object_from_object)
+-  [Function `create_object_from_guid`](#0x1_object_create_object_from_guid)
+-  [Function `create_object_internal`](#0x1_object_create_object_internal)
+-  [Function `disallow_ungated_transfer`](#0x1_object_disallow_ungated_transfer)
+-  [Function `generate_delete_ref`](#0x1_object_generate_delete_ref)
+-  [Function `generate_signer`](#0x1_object_generate_signer)
+-  [Function `object_id_from_creator_ref`](#0x1_object_object_id_from_creator_ref)
 -  [Function `create_guid`](#0x1_object_create_guid)
--  [Function `generate_delete_ability`](#0x1_object_generate_delete_ability)
--  [Function `delete_ability_address`](#0x1_object_delete_ability_address)
--  [Function `delete`](#0x1_object_delete)
 -  [Function `new_event_handle`](#0x1_object_new_event_handle)
--  [Function `create_signer_internal`](#0x1_object_create_signer_internal)
--  [Function `generate_signer_ability`](#0x1_object_generate_signer_ability)
+-  [Function `delete_ref_id`](#0x1_object_delete_ref_id)
+-  [Function `delete`](#0x1_object_delete)
+-  [Function `generate_extend_ref`](#0x1_object_generate_extend_ref)
+-  [Function `generate_signer_for_extending`](#0x1_object_generate_signer_for_extending)
+-  [Function `generate_transfer_ref`](#0x1_object_generate_transfer_ref)
+-  [Function `generate_linear_transfer_ref`](#0x1_object_generate_linear_transfer_ref)
+-  [Function `transfer_with_ref`](#0x1_object_transfer_with_ref)
+-  [Function `entry_transfer`](#0x1_object_entry_transfer)
+-  [Function `transfer`](#0x1_object_transfer)
+-  [Function `transfer_to_object`](#0x1_object_transfer_to_object)
+-  [Function `verify_ungated_and_descendant`](#0x1_object_verify_ungated_and_descendant)
+-  [Function `owner`](#0x1_object_owner)
+-  [Function `is_owner`](#0x1_object_is_owner)
 -  [Function `create_signer`](#0x1_object_create_signer)
--  [Function `generate_owner_ability`](#0x1_object_generate_owner_ability)
--  [Function `owner_ability_address`](#0x1_object_owner_ability_address)
--  [Function `typed_owner_ability_address`](#0x1_object_typed_owner_ability_address)
--  [Function `to_typed_owner_ability`](#0x1_object_to_typed_owner_ability)
--  [Function `to_owner_ability`](#0x1_object_to_owner_ability)
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
@@ -94,7 +101,6 @@ for their owned objects.
 <b>use</b> <a href="guid.md#0x1_guid">0x1::guid</a>;
 <b>use</b> <a href="../../aptos-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
-<b>use</b> <a href="../../aptos-stdlib/doc/table.md#0x1_table">0x1::table</a>;
 <b>use</b> <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
@@ -118,6 +124,24 @@ for their owned objects.
 <dl>
 <dt>
 <code>guid_creation_num: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>owner: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>allow_ungated_transfer: bool</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>transfer_events: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="object.md#0x1_object_TransferEvent">object::TransferEvent</a>&gt;</code>
 </dt>
 <dd>
 
@@ -154,6 +178,34 @@ for their owned objects.
 
 </details>
 
+<a name="0x1_object_ObjectId"></a>
+
+## Struct `ObjectId`
+
+Type safe way of designate an object as at this address
+
+
+<pre><code><b>struct</b> <a href="object.md#0x1_object_ObjectId">ObjectId</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>inner: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x1_object_CreatorRef"></a>
 
 ## Struct `CreatorRef`
@@ -172,7 +224,13 @@ This is a one time ability given to the creator to configure the object as neces
 
 <dl>
 <dt>
-<code>self: <b>address</b></code>
+<code>self: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>can_delete: bool</code>
 </dt>
 <dd>
 
@@ -189,7 +247,7 @@ This is a one time ability given to the creator to configure the object as neces
 The owner of this ability can delete an object
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -200,7 +258,7 @@ The owner of this ability can delete an object
 
 <dl>
 <dt>
-<code>self: <b>address</b></code>
+<code>self: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
 </dt>
 <dd>
 
@@ -210,14 +268,14 @@ The owner of this ability can delete an object
 
 </details>
 
-<a name="0x1_object_SignerRef"></a>
+<a name="0x1_object_ExtendRef"></a>
 
-## Struct `SignerRef`
+## Struct `ExtendRef`
 
-The owner of this ability can generate the object's signer
+Access to this ref allows for creation of the signer to add new resources
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_SignerRef">SignerRef</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_ExtendRef">ExtendRef</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -228,7 +286,7 @@ The owner of this ability can generate the object's signer
 
 <dl>
 <dt>
-<code>self: <b>address</b></code>
+<code>self: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
 </dt>
 <dd>
 
@@ -238,14 +296,14 @@ The owner of this ability can generate the object's signer
 
 </details>
 
-<a name="0x1_object_OwnerRef"></a>
+<a name="0x1_object_TransferRef"></a>
 
-## Struct `OwnerRef`
+## Struct `TransferRef`
 
-This implies that this individual owns this object
+Access to this ref allows for owner to transfer the resources between two addresses
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_TransferRef">TransferRef</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -256,7 +314,7 @@ This implies that this individual owns this object
 
 <dl>
 <dt>
-<code>self: <b>address</b></code>
+<code>self: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
 </dt>
 <dd>
 
@@ -266,14 +324,14 @@ This implies that this individual owns this object
 
 </details>
 
-<a name="0x1_object_TypedOwnerRef"></a>
+<a name="0x1_object_LinearTransferRef"></a>
 
-## Struct `TypedOwnerRef`
+## Struct `LinearTransferRef`
 
-This implies that the individual owns this object and it contains a specific type / resource
+Access to this ref allows for owner to transfer the resources between two addresses
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T: key&gt; <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="object.md#0x1_object_LinearTransferRef">LinearTransferRef</a> <b>has</b> drop
 </code></pre>
 
 
@@ -284,7 +342,7 @@ This implies that the individual owns this object and it contains a specific typ
 
 <dl>
 <dt>
-<code>self: <b>address</b></code>
+<code>self: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
 </dt>
 <dd>
 
@@ -294,13 +352,13 @@ This implies that the individual owns this object and it contains a specific typ
 
 </details>
 
-<a name="0x1_object_ObjectStore"></a>
+<a name="0x1_object_TransferEvent"></a>
 
-## Resource `ObjectStore`
+## Struct `TransferEvent`
 
 
 
-<pre><code><b>struct</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="object.md#0x1_object_TransferEvent">TransferEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -311,73 +369,19 @@ This implies that the individual owns this object and it contains a specific typ
 
 <dl>
 <dt>
-<code>inner: <a href="../../aptos-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<b>address</b>, <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>&gt;</code>
+<code>object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>deposits: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="object.md#0x1_object_DepositEvent">object::DepositEvent</a>&gt;</code>
+<code>from: <b>address</b></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>withdraws: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="object.md#0x1_object_WithdrawEvent">object::WithdrawEvent</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x1_object_DepositEvent"></a>
-
-## Struct `DepositEvent`
-
-
-
-<pre><code><b>struct</b> <a href="object.md#0x1_object_DepositEvent">DepositEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>object_id: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x1_object_WithdrawEvent"></a>
-
-## Struct `WithdrawEvent`
-
-
-
-<pre><code><b>struct</b> <a href="object.md#0x1_object_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>object_id: <b>address</b></code>
+<code><b>to</b>: <b>address</b></code>
 </dt>
 <dd>
 
@@ -390,6 +394,46 @@ This implies that the individual owns this object and it contains a specific typ
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x1_object_ECANNOT_DELETE"></a>
+
+The object does not allow for deletion
+
+
+<pre><code><b>const</b> <a href="object.md#0x1_object_ECANNOT_DELETE">ECANNOT_DELETE</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="0x1_object_ENOT_OBJECT_OWNER"></a>
+
+The caller does not have ownership permissions
+
+
+<pre><code><b>const</b> <a href="object.md#0x1_object_ENOT_OBJECT_OWNER">ENOT_OBJECT_OWNER</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x1_object_ENO_UNGATED_TRANSFERS"></a>
+
+The object does not have ungated transfers enabled
+
+
+<pre><code><b>const</b> <a href="object.md#0x1_object_ENO_UNGATED_TRANSFERS">ENO_UNGATED_TRANSFERS</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x1_object_EOBJECT_DOES_NOT_EXIST"></a>
+
+An object does not exist at this address
+
+
+<pre><code><b>const</b> <a href="object.md#0x1_object_EOBJECT_DOES_NOT_EXIST">EOBJECT_DOES_NOT_EXIST</a>: u64 = 2;
+</code></pre>
+
 
 
 <a name="0x1_object_EOBJECT_EXISTS"></a>
@@ -424,150 +468,14 @@ address.
 
 
 
-<a name="0x1_object_init_store"></a>
-
-## Function `init_store`
-
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_init_store">init_store</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    <b>move_to</b>(
-        <a href="account.md#0x1_account">account</a>,
-        <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
-            inner: <a href="../../aptos-stdlib/doc/table.md#0x1_table_new">table::new</a>(),
-            deposits: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>(<a href="account.md#0x1_account">account</a>),
-            withdraws: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>(<a href="account.md#0x1_account">account</a>),
-        },
-    )
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_withdraw"></a>
-
-## Function `withdraw`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_withdraw">withdraw</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
-    <b>let</b> object_store = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_ObjectStore">ObjectStore</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
-    <a href="event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> object_store.withdraws, <a href="object.md#0x1_object_WithdrawEvent">WithdrawEvent</a> { object_id: addr });
-    <a href="../../aptos-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> object_store.inner, addr)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_deposit"></a>
-
-## Function `deposit`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_OwnerRef">OwnerRef</a>) <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
-    <b>let</b> object_store = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_ObjectStore">ObjectStore</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
-    <b>let</b> object_addr = <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(&<a href="object.md#0x1_object">object</a>);
-    <a href="event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> object_store.deposits, <a href="object.md#0x1_object_DepositEvent">DepositEvent</a> { object_id: object_addr });
-    <a href="../../aptos-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> object_store.inner, object_addr, <a href="object.md#0x1_object">object</a>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_deposit_typed"></a>
-
-## Function `deposit_typed`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit_typed">deposit_typed</a>&lt;T: key&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_deposit_typed">deposit_typed</a>&lt;T: key&gt;(
-    <a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;,
-) <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
-    <a href="object.md#0x1_object_deposit">deposit</a>(<a href="account.md#0x1_account">account</a>, <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>(<a href="object.md#0x1_object">object</a>))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_contains"></a>
-
-## Function `contains`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_contains">contains</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_contains">contains</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, addr: <b>address</b>): bool <b>acquires</b> <a href="object.md#0x1_object_ObjectStore">ObjectStore</a> {
-    <b>let</b> object_store = <b>borrow_global</b>&lt;<a href="object.md#0x1_object_ObjectStore">ObjectStore</a>&gt;(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>));
-    <a href="../../aptos-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&object_store.inner, addr)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_object_create_object_id"></a>
 
 ## Function `create_object_id`
 
-Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
+Produces an ObjectId from the given address.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_id">create_object_id</a>(source: &<b>address</b>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_id">create_object_id</a>(object_id: <b>address</b>): <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>
 </code></pre>
 
 
@@ -576,11 +484,8 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_id">create_object_id</a>(source: &<b>address</b>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b> {
-    <b>let</b> bytes = <a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(source);
-    <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> bytes, seed);
-    <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="object.md#0x1_object_OBJECT_ADDRESS_SCHEME">OBJECT_ADDRESS_SCHEME</a>);
-    <a href="../../aptos-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../aptos-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_id">create_object_id</a>(object_id: <b>address</b>): <a href="object.md#0x1_object_ObjectId">ObjectId</a> {
+    <a href="object.md#0x1_object_ObjectId">ObjectId</a> { inner: object_id }
 }
 </code></pre>
 
@@ -588,13 +493,15 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 </details>
 
-<a name="0x1_object_create_object"></a>
+<a name="0x1_object_derive_object_id"></a>
 
-## Function `create_object`
+## Function `derive_object_id`
+
+Derives an object id from source material: sha3_256([creator address | seed | 0xFE]).
+The ObjectId needs to be distinct from create_resource_address
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_derive_object_id">derive_object_id</a>(source: &<b>address</b>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>
 </code></pre>
 
 
@@ -603,19 +510,283 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
-    // create <a href="object.md#0x1_object">object</a> <b>address</b> needs <b>to</b> be distinct from create_resource_address
-    <b>let</b> <b>address</b> = <a href="object.md#0x1_object_create_object_id">create_object_id</a>(&<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator), seed);
-    <b>assert</b>!(!<b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(<b>address</b>), <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="object.md#0x1_object_EOBJECT_EXISTS">EOBJECT_EXISTS</a>));
-    <b>let</b> object_signer = <a href="object.md#0x1_object_create_signer_internal">create_signer_internal</a>(<b>address</b>);
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_derive_object_id">derive_object_id</a>(source: &<b>address</b>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_ObjectId">ObjectId</a> {
+    <b>let</b> bytes = <a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(source);
+    <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> bytes, seed);
+    <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="object.md#0x1_object_OBJECT_ADDRESS_SCHEME">OBJECT_ADDRESS_SCHEME</a>);
+    <a href="object.md#0x1_object_ObjectId">ObjectId</a> { inner: <a href="../../aptos-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../aptos-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes)) }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_object_id_address"></a>
+
+## Function `object_id_address`
+
+Returns the address of an ObjectId
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_id_address">object_id_address</a>(object_id: &<a href="object.md#0x1_object_ObjectId">object::ObjectId</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_id_address">object_id_address</a>(object_id: &<a href="object.md#0x1_object_ObjectId">ObjectId</a>): <b>address</b> {
+    object_id.inner
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_create_named_object"></a>
+
+## Function `create_named_object`
+
+Create a new named object and return the CreatorRef. Named objects can be queried globally
+by knowing the user generated seed used to create them. Named objects cannot be deleted.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_named_object">create_named_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_named_object">create_named_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
+    <b>let</b> creator_address = <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> id = <a href="object.md#0x1_object_derive_object_id">derive_object_id</a>(&creator_address, seed);
+    <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address, id, <b>false</b>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_create_object_from_account"></a>
+
+## Function `create_object_from_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_account">create_object_from_account</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_account">create_object_from_account</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
+    <b>let</b> <a href="guid.md#0x1_guid">guid</a> = <a href="account.md#0x1_account_create_guid">account::create_guid</a>(creator);
+    <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator), <a href="guid.md#0x1_guid">guid</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_create_object_from_object"></a>
+
+## Function `create_object_from_object`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_object">create_object_from_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_object">create_object_from_object</a>(creator: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> <a href="guid.md#0x1_guid">guid</a> = <a href="object.md#0x1_object_create_guid">create_guid</a>(creator);
+    <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator), <a href="guid.md#0x1_guid">guid</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_create_object_from_guid"></a>
+
+## Function `create_object_from_guid`
+
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(creator_address: <b>address</b>, <a href="guid.md#0x1_guid">guid</a>: <a href="guid.md#0x1_guid_GUID">guid::GUID</a>): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(creator_address: <b>address</b>, <a href="guid.md#0x1_guid">guid</a>: <a href="guid.md#0x1_guid_GUID">guid::GUID</a>): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
+    <b>let</b> bytes = <a href="../../aptos-stdlib/../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&<a href="guid.md#0x1_guid">guid</a>);
+    <a href="../../aptos-stdlib/../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="object.md#0x1_object_OBJECT_ADDRESS_SCHEME">OBJECT_ADDRESS_SCHEME</a>);
+    <b>let</b> object_id = <a href="object.md#0x1_object_ObjectId">ObjectId</a> { inner: <a href="../../aptos-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../aptos-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes)) };
+    <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address, object_id, <b>true</b>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_create_object_internal"></a>
+
+## Function `create_object_internal`
+
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address: <b>address</b>, id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>, can_delete: bool): <a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(
+    creator_address: <b>address</b>,
+    id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>,
+    can_delete: bool,
+): <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> {
+    <b>assert</b>!(!<b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(id.inner), <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="object.md#0x1_object_EOBJECT_EXISTS">EOBJECT_EXISTS</a>));
+
+    <b>let</b> object_signer = <a href="object.md#0x1_object_create_signer">create_signer</a>(id.inner);
+    <b>let</b> guid_creation_num = 0;
+    <b>let</b> transfer_events_guid = <a href="guid.md#0x1_guid_create">guid::create</a>(id.inner, &<b>mut</b> guid_creation_num);
 
     <b>move_to</b>(
         &object_signer,
         <a href="object.md#0x1_object_Object">Object</a> {
-            guid_creation_num: 0,
+            guid_creation_num,
+            owner: creator_address,
+            allow_ungated_transfer: <b>true</b>,
+            transfer_events: <a href="event.md#0x1_event_new_event_handle">event::new_event_handle</a>(transfer_events_guid),
         },
     );
-    <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> { self: <b>address</b> }
+    <a href="object.md#0x1_object_CreatorRef">CreatorRef</a> { self: id, can_delete }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_disallow_ungated_transfer"></a>
+
+## Function `disallow_ungated_transfer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_disallow_ungated_transfer">disallow_ungated_transfer</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_disallow_ungated_transfer">disallow_ungated_transfer</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> <a href="object.md#0x1_object">object</a> = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(ref.self.inner);
+    <a href="object.md#0x1_object">object</a>.allow_ungated_transfer = <b>false</b>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_delete_ref"></a>
+
+## Function `generate_delete_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ref">generate_delete_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ref">generate_delete_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> {
+    <b>assert</b>!(ref.can_delete, <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="object.md#0x1_object_ECANNOT_DELETE">ECANNOT_DELETE</a>));
+    <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> { self: ref.self }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_signer"></a>
+
+## Function `generate_signer`
+
+Create a signer for the CreatorRef
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer">generate_signer</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer">generate_signer</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
+    <a href="object.md#0x1_object_create_signer">create_signer</a>(ref.self.inner)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_object_id_from_creator_ref"></a>
+
+## Function `object_id_from_creator_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_id_from_creator_ref">object_id_from_creator_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_id_from_creator_ref">object_id_from_creator_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_ObjectId">ObjectId</a> {
+    ref.self
 }
 </code></pre>
 
@@ -627,6 +798,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 ## Function `create_guid`
 
+Create a guid for the object, typically used for events
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_guid">create_guid</a>(<a href="object.md#0x1_object">object</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="guid.md#0x1_guid_GUID">guid::GUID</a>
@@ -649,85 +821,11 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 </details>
 
-<a name="0x1_object_generate_delete_ability"></a>
-
-## Function `generate_delete_ability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ability">generate_delete_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> {
-    <a href="object.md#0x1_object_DeleteRef">DeleteRef</a> { self: ability.self }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_delete_ability_address"></a>
-
-## Function `delete_ability_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ability_address">delete_ability_address</a>(ability: &<a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ability_address">delete_ability_address</a>(ability: &<a href="object.md#0x1_object_DeleteRef">DeleteRef</a>): <b>address</b> {
-    ability.self
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_delete"></a>
-
-## Function `delete`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ability: <a href="object.md#0x1_object_DeleteRef">DeleteRef</a>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
-    <b>let</b> <a href="object.md#0x1_object">object</a> = <b>move_from</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(ability.self);
-    <b>let</b> <a href="object.md#0x1_object_Object">Object</a> {
-        guid_creation_num: _,
-    } = <a href="object.md#0x1_object">object</a>;
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_object_new_event_handle"></a>
 
 ## Function `new_event_handle`
 
+Generate a new event handle
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_new_event_handle">new_event_handle</a>&lt;T: drop, store&gt;(<a href="object.md#0x1_object">object</a>: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;T&gt;
@@ -750,13 +848,13 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 </details>
 
-<a name="0x1_object_create_signer_internal"></a>
+<a name="0x1_object_delete_ref_id"></a>
 
-## Function `create_signer_internal`
+## Function `delete_ref_id`
 
 
 
-<pre><code><b>fun</b> <a href="object.md#0x1_object_create_signer_internal">create_signer_internal</a>(addr: <b>address</b>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ref_id">delete_ref_id</a>(ref: &<a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>): <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>
 </code></pre>
 
 
@@ -765,20 +863,22 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>fun</b> <a href="object.md#0x1_object_create_signer_internal">create_signer_internal</a>(addr: <b>address</b>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete_ref_id">delete_ref_id</a>(ref: &<a href="object.md#0x1_object_DeleteRef">DeleteRef</a>): <a href="object.md#0x1_object_ObjectId">ObjectId</a> {
+    ref.self
+}
 </code></pre>
 
 
 
 </details>
 
-<a name="0x1_object_generate_signer_ability"></a>
+<a name="0x1_object_delete"></a>
 
-## Function `generate_signer_ability`
+## Function `delete`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_SignerRef">object::SignerRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ref: <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>)
 </code></pre>
 
 
@@ -787,8 +887,344 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_ability">generate_signer_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_SignerRef">SignerRef</a> {
-    <a href="object.md#0x1_object_SignerRef">SignerRef</a> { self: ability.self }
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ref: <a href="object.md#0x1_object_DeleteRef">DeleteRef</a>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> <a href="object.md#0x1_object">object</a> = <b>move_from</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(ref.self.inner);
+    <b>let</b> <a href="object.md#0x1_object_Object">Object</a> {
+        guid_creation_num: _,
+        owner: _,
+        allow_ungated_transfer: _,
+        transfer_events,
+    } = <a href="object.md#0x1_object">object</a>;
+    <a href="event.md#0x1_event_destroy_handle">event::destroy_handle</a>(transfer_events);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_extend_ref"></a>
+
+## Function `generate_extend_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_extend_ref">generate_extend_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_ExtendRef">object::ExtendRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_extend_ref">generate_extend_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_ExtendRef">ExtendRef</a> {
+    <a href="object.md#0x1_object_ExtendRef">ExtendRef</a> { self: ref.self }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_signer_for_extending"></a>
+
+## Function `generate_signer_for_extending`
+
+Create a signer for the ExtendRef
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_for_extending">generate_signer_for_extending</a>(ref: &<a href="object.md#0x1_object_ExtendRef">object::ExtendRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_signer_for_extending">generate_signer_for_extending</a>(ref: &<a href="object.md#0x1_object_ExtendRef">ExtendRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
+    <a href="object.md#0x1_object_create_signer">create_signer</a>(ref.self.inner)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_transfer_ref"></a>
+
+## Function `generate_transfer_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_transfer_ref">generate_transfer_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_TransferRef">object::TransferRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_transfer_ref">generate_transfer_ref</a>(ref: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_TransferRef">TransferRef</a> {
+    <a href="object.md#0x1_object_TransferRef">TransferRef</a> { self: ref.self }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_generate_linear_transfer_ref"></a>
+
+## Function `generate_linear_transfer_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_linear_transfer_ref">generate_linear_transfer_ref</a>(ref: <a href="object.md#0x1_object_TransferRef">object::TransferRef</a>): <a href="object.md#0x1_object_LinearTransferRef">object::LinearTransferRef</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_linear_transfer_ref">generate_linear_transfer_ref</a>(ref: <a href="object.md#0x1_object_TransferRef">TransferRef</a>): <a href="object.md#0x1_object_LinearTransferRef">LinearTransferRef</a> {
+    <a href="object.md#0x1_object_LinearTransferRef">LinearTransferRef</a> { self: ref.self }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_transfer_with_ref"></a>
+
+## Function `transfer_with_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_with_ref">transfer_with_ref</a>(ref: <a href="object.md#0x1_object_LinearTransferRef">object::LinearTransferRef</a>, <b>to</b>: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_with_ref">transfer_with_ref</a>(ref: <a href="object.md#0x1_object_LinearTransferRef">LinearTransferRef</a>, <b>to</b>: <b>address</b>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> <a href="object.md#0x1_object">object</a> = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(ref.self.inner);
+    <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
+        &<b>mut</b> <a href="object.md#0x1_object">object</a>.transfer_events,
+        <a href="object.md#0x1_object_TransferEvent">TransferEvent</a> {
+            object_id: ref.self,
+            from: <a href="object.md#0x1_object">object</a>.owner,
+            <b>to</b>,
+        },
+    );
+    <a href="object.md#0x1_object">object</a>.owner = <b>to</b>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_entry_transfer"></a>
+
+## Function `entry_transfer`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_entry_transfer">entry_transfer</a>(owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, object_id: <b>address</b>, <b>to</b>: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_entry_transfer">entry_transfer</a>(
+    owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    object_id: <b>address</b>,
+    <b>to</b>: <b>address</b>,
+) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <a href="object.md#0x1_object_transfer">transfer</a>(owner, <a href="object.md#0x1_object_ObjectId">ObjectId</a> { inner: object_id }, <b>to</b>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_transfer"></a>
+
+## Function `transfer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer">transfer</a>(owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>, <b>to</b>: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer">transfer</a>(
+    owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    object_id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>,
+    <b>to</b>: <b>address</b>,
+) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> owner_address = <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
+    <b>if</b> (owner_address == <b>to</b>) {
+        <b>return</b>
+    };
+
+    <a href="object.md#0x1_object_verify_ungated_and_descendant">verify_ungated_and_descendant</a>(owner_address, object_id.inner);
+
+    <b>let</b> <a href="object.md#0x1_object">object</a> = <b>borrow_global_mut</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(object_id.inner);
+    <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
+        &<b>mut</b> <a href="object.md#0x1_object">object</a>.transfer_events,
+        <a href="object.md#0x1_object_TransferEvent">TransferEvent</a> {
+            object_id: object_id,
+            from: <a href="object.md#0x1_object">object</a>.owner,
+            <b>to</b>,
+        },
+    );
+    <a href="object.md#0x1_object">object</a>.owner = <b>to</b>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_transfer_to_object"></a>
+
+## Function `transfer_to_object`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_to_object">transfer_to_object</a>(owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>, <b>to</b>: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_to_object">transfer_to_object</a>(
+    owner: &<a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    object_id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>,
+    <b>to</b>: <a href="object.md#0x1_object_ObjectId">ObjectId</a>,
+) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <a href="object.md#0x1_object_transfer">transfer</a>(owner, object_id, <b>to</b>.inner)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_verify_ungated_and_descendant"></a>
+
+## Function `verify_ungated_and_descendant`
+
+This checks that the destination address is eventually owned by the owner and that each
+object between the two allows for ungated transfers.
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_verify_ungated_and_descendant">verify_ungated_and_descendant</a>(owner: <b>address</b>, destination: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_verify_ungated_and_descendant">verify_ungated_and_descendant</a>(owner: <b>address</b>, destination: <b>address</b>) <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>let</b> current_address = destination;
+    <b>assert</b>!(
+        <b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(current_address),
+        <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="object.md#0x1_object_EOBJECT_DOES_NOT_EXIST">EOBJECT_DOES_NOT_EXIST</a>),
+    );
+
+    <b>while</b> (owner != current_address) {
+        // At this point, the first <a href="object.md#0x1_object">object</a> <b>exists</b> and so the more likely case is that the
+        // <a href="object.md#0x1_object">object</a>'s owner is not an <a href="object.md#0x1_object">object</a>. So we <b>return</b> a more sensible <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error">error</a>.
+        <b>assert</b>!(
+            <b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(current_address),
+            <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="object.md#0x1_object_ENOT_OBJECT_OWNER">ENOT_OBJECT_OWNER</a>),
+        );
+        <b>let</b> <a href="object.md#0x1_object">object</a> = <b>borrow_global</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(current_address);
+        <b>assert</b>!(
+            <a href="object.md#0x1_object">object</a>.allow_ungated_transfer,
+            <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="object.md#0x1_object_ENO_UNGATED_TRANSFERS">ENO_UNGATED_TRANSFERS</a>),
+        );
+
+        current_address = <a href="object.md#0x1_object">object</a>.owner;
+    };
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_owner"></a>
+
+## Function `owner`
+
+Accessors
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner">owner</a>(object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner">owner</a>(object_id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>): <b>address</b> <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <b>assert</b>!(
+        <b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(object_id.inner),
+        <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="object.md#0x1_object_EOBJECT_DOES_NOT_EXIST">EOBJECT_DOES_NOT_EXIST</a>),
+    );
+    <b>borrow_global</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(object_id.inner).owner
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_is_owner"></a>
+
+## Function `is_owner`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_is_owner">is_owner</a>(object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>, owner: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_is_owner">is_owner</a>(object_id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>, owner: <a href="object.md#0x1_object_ObjectId">ObjectId</a>): bool <b>acquires</b> <a href="object.md#0x1_object_Object">Object</a> {
+    <a href="object.md#0x1_object_owner">owner</a>(object_id) == owner.inner
 }
 </code></pre>
 
@@ -802,7 +1238,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerRef">object::SignerRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+<pre><code><b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(addr: <b>address</b>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
 </code></pre>
 
 
@@ -811,131 +1247,7 @@ Object addresses are equal to the sha3_256([creator addres | seed | 0xFE]).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(ability: &<a href="object.md#0x1_object_SignerRef">SignerRef</a>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
-    <a href="object.md#0x1_object_create_signer_internal">create_signer_internal</a>(ability.self)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_generate_owner_ability"></a>
-
-## Function `generate_owner_ability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">object::CreatorRef</a>): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_owner_ability">generate_owner_ability</a>(ability: &<a href="object.md#0x1_object_CreatorRef">CreatorRef</a>): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> {
-    <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self: ability.self }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_owner_ability_address"></a>
-
-## Function `owner_ability_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner_ability_address">owner_ability_address</a>(ability: &<a href="object.md#0x1_object_OwnerRef">OwnerRef</a>): <b>address</b> {
-    ability.self
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_typed_owner_ability_address"></a>
-
-## Function `typed_owner_ability_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_owner_ability_address">typed_owner_ability_address</a>&lt;T: key&gt;(ability: &<a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;): <b>address</b> {
-    ability.self
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_to_typed_owner_ability"></a>
-
-## Function `to_typed_owner_ability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed_owner_ability">to_typed_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_OwnerRef">OwnerRef</a>, _t: &T): <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt; {
-    <b>let</b> <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self } = ability;
-    <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a> { self }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_object_to_owner_ability"></a>
-
-## Function `to_owner_ability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerRef">object::TypedOwnerRef</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerRef">object::OwnerRef</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_owner_ability">to_owner_ability</a>&lt;T: key&gt;(ability: <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a>&lt;T&gt;): <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> {
-    <b>let</b> <a href="object.md#0x1_object_TypedOwnerRef">TypedOwnerRef</a> { self } = ability;
-    <a href="object.md#0x1_object_OwnerRef">OwnerRef</a> { self }
-}
+<pre><code><b>native</b> <b>fun</b> <a href="object.md#0x1_object_create_signer">create_signer</a>(addr: <b>address</b>): <a href="../../aptos-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
 </code></pre>
 
 

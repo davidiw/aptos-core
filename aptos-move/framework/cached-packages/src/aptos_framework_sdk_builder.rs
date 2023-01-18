@@ -212,7 +212,10 @@ pub enum EntryFunctionCall {
         coin_type: TypeTag,
     },
 
-    ObjectInitStore {},
+    ObjectEntryTransfer {
+        object_id: AccountAddress,
+        to: AccountAddress,
+    },
 
     /// Creates a new resource account and rotates the authentication key to either
     /// the optional auth key if it is non-empty (though auth keys are 32-bytes)
@@ -615,7 +618,7 @@ impl EntryFunctionCall {
                 amount,
             } => managed_coin_mint(coin_type, dst_addr, amount),
             ManagedCoinRegister { coin_type } => managed_coin_register(coin_type),
-            ObjectInitStore {} => object_init_store(),
+            ObjectEntryTransfer { object_id, to } => object_entry_transfer(object_id, to),
             ResourceAccountCreateResourceAccount {
                 seed,
                 optional_auth_key,
@@ -1312,7 +1315,7 @@ pub fn managed_coin_register(coin_type: TypeTag) -> TransactionPayload {
     ))
 }
 
-pub fn object_init_store() -> TransactionPayload {
+pub fn object_entry_transfer(object_id: AccountAddress, to: AccountAddress) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([
@@ -1321,9 +1324,12 @@ pub fn object_init_store() -> TransactionPayload {
             ]),
             ident_str!("object").to_owned(),
         ),
-        ident_str!("init_store").to_owned(),
+        ident_str!("entry_transfer").to_owned(),
         vec![],
-        vec![],
+        vec![
+            bcs::to_bytes(&object_id).unwrap(),
+            bcs::to_bytes(&to).unwrap(),
+        ],
     ))
 }
 
@@ -2578,9 +2584,12 @@ mod decoder {
         }
     }
 
-    pub fn object_init_store(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(_script) = payload {
-            Some(EntryFunctionCall::ObjectInitStore {})
+    pub fn object_entry_transfer(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::ObjectEntryTransfer {
+                object_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                to: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
         } else {
             None
         }
@@ -3260,8 +3269,8 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::managed_coin_register),
         );
         map.insert(
-            "object_init_store".to_string(),
-            Box::new(decoder::object_init_store),
+            "object_entry_transfer".to_string(),
+            Box::new(decoder::object_entry_transfer),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),

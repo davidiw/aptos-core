@@ -2,21 +2,22 @@
 /// token are:
 /// * Decouple token ownership from token data.
 /// * Explicit data model for token metadata via adjacent resources
-/// * Attempt at having cleaner semantic on capabilities surrounding tokens
+/// * Extensible framework for tokens
 ///
 /// TODO:
-/// * Create the notion of a collection such that it can be used to guide creation of tokens
 /// * Provide functions for mutability -- the capability model seems to heavy for mutations, so
 ///   probably keep the existing model
 /// * Consider adding an optional source name if name is mutated, since the objects address depends
 ///   on the name...
 module token_objects::token {
-    // use std::option::{Self, Option};
+    use std::option::{Self, Option};
     use std::string::{Self, String};
     use std::signer;
     use std::vector;
 
-    use aptos_framework::object::{Self, CreatorRef};
+    use aptos_framework::object::{Self, CreatorRef, ObjectId};
+
+    use token_objects::collection::{Self, Royalty};
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// Represents the common fields to all tokens.
@@ -30,11 +31,11 @@ module token_objects::token {
         /// Determines which fields are mutable.
         mutability_config: MutabilityConfig,
         /// The name of the token, which should be unique within the collection; the length of name
-        ///should be smaller than 128, characters, eg: "Aptos Animal #1234"
+        /// should be smaller than 128, characters, eg: "Aptos Animal #1234"
         name: String,
-        /// The denominator and numerator for calculating the royalty fee; it also contains payee
-        /// account address for depositing the Royalty
-        royalty: Royalty,
+        /// The creation name of the token. Since tokens are created with the name as part of the
+        /// object id generation.
+        creation_name: Option<String>,
         /// The Uniform Resource Identifier (uri) pointing to the JSON file stored in off-chain
         /// storage; the URL length will likely need a maximum any suggestions?
         uri: String,
@@ -47,73 +48,57 @@ module token_objects::token {
         uri: bool,
     }
 
-    /// The royalty of a token
-    struct Royalty has copy, drop, store {
-        numerator: u64,
-        denominator: u64,
-        /// The recipient of royalty payments. See the `shared_account` for how to handle multiple
-        /// creators.
-        payee_address: address,
-    }
-
     public fun create_token(
         creator: &signer,
         collection: String,
         description: String,
         mutability_config: MutabilityConfig,
         name: String,
-        royalty: Royalty,
+        royalty: Option<Royalty>,
         uri: String,
     ): CreatorRef {
-        let seed = create_token_id_seed(&collection, &name);
-        // To keep costs down, this function does not check to see if the object already exists
-        let creator_ability = object::create_object(creator, seed);
-        let signer_ability = object::generate_signer_ability(&creator_ability);
-        let token_signer = object::create_signer(&signer_ability);
+        let creator_address = signer::address_of(creator);
+        let seed = derive_token_id_seed(&collection, &name);
+        let creator_ref = object::create_named_object(creator, seed);
+        let object_signer = object::generate_signer(&creator_ref);
 
-        let token = Token {
-            collection,
-            creator: signer::address_of(creator),
-            description,
-            mutability_config,
-            name,
-            royalty,
-            uri,
+        collection::increment_supply(&creator_address, &collection);
+        move_to(
+            &object_signer,
+            Token {
+                collection,
+                creator: creator_address,
+                description,
+                mutability_config,
+                name,
+                creation_name: option::none(),
+                uri,
+            },
+        );
+
+        if (option::is_some(&royalty)) {
+            collection::init_royalty(&object_signer, option::extract(&mut royalty))
         };
-
-        move_to(&token_signer, token);
-        creator_ability
+        creator_ref
     }
 
-    public fun create_token_id(creator: &address, collection: &String, name: &String): address {
-        object::create_object_id(creator, create_token_id_seed(collection, name))
+    public fun create_mutability_config(description: bool, name: bool, uri: bool): MutabilityConfig {
+        MutabilityConfig { description, name, uri }
     }
 
-    public fun create_token_id_seed(collection: &String, name: &String): vector<u8> {
+    public fun derive_token_id(creator: &address, collection: &String, name: &String): ObjectId {
+        object::derive_object_id(creator, derive_token_id_seed(collection, name))
+    }
+
+    public fun derive_token_id_seed(collection: &String, name: &String): vector<u8> {
         let seed = *string::bytes(collection);
         vector::append(&mut seed, b"::");
         vector::append(&mut seed, *string::bytes(name));
         seed
     }
 
-    public fun create_mutability_config(description: bool, name: bool, uri: bool): MutabilityConfig {
-        MutabilityConfig {
-            description,
-            name,
-            uri,
-        }
-    }
-
-    public fun create_royalty(numerator: u64, denominator: u64, payee_address: address): Royalty {
-        Royalty {
-            numerator,
-            denominator,
-            payee_address,
-        }
-    }
-
     /// Simple token creation that generates a token and deposits it into the creators object store.
-    entry fun mint_token(
+    public entry fun mint_token(
         creator: &signer,
         collection: String,
         description: String,
@@ -122,6 +107,7 @@ module token_objects::token {
         mutable_description: bool,
         mutable_name: bool,
         mutable_uri: bool,
+        enable_royalty: bool,
         royalty_numerator: u64,
         royalty_denominator: u64,
         royalty_payee_address: address,
@@ -132,13 +118,17 @@ module token_objects::token {
             mutable_uri,
         );
 
-        let royalty = create_royalty(
-            royalty_numerator,
-            royalty_denominator,
-            royalty_payee_address,
-        );
+        let royalty = if (enable_royalty) {
+            option::some(collection::create_royalty(
+                royalty_numerator,
+                royalty_denominator,
+                royalty_payee_address,
+            ))
+        } else {
+            option::none()
+        };
 
-        let creator_ability = create_token(
+        create_token(
             creator,
             collection,
             description,
@@ -147,30 +137,18 @@ module token_objects::token {
             royalty,
             uri,
         );
-
-        let owner_ability = object::generate_owner_ability(&creator_ability);
-        object::deposit(creator, owner_ability);
     }
 
-    public fun delete(ability: object::DeleteRef) acquires Token {
-        let token_id = object::delete_ability_address(&ability);
-        let token = move_from<Token>(token_id);
-        let Token {
-            collection: _,
-            creator: _,
-            description: _,
-            mutability_config: _,
-            name: _,
-            royalty: _,
-            uri: _,
-        } = token;
-        object::delete(ability);
-    }
+    // Accessors
 
-    public fun get_creator(token_id: address): address acquires Token {
+    public fun creator(token_id: address): address acquires Token {
         let token = borrow_global<Token>(token_id);
         token.creator
     }
+
+    // Mutators
+
+    // Entry functions
 
     entry fun update_description(
         creator: &signer,
@@ -178,41 +156,80 @@ module token_objects::token {
         name: String,
         description: String
     )  acquires Token {
-        let token_id = create_token_id(&signer::address_of(creator), &collection, &name);
-        let token = borrow_global_mut<Token>(token_id);
+        let token_id = derive_token_id(&signer::address_of(creator), &collection, &name);
+        let token = borrow_global_mut<Token>(object::object_id_address(&token_id));
         token.description = description;
     }
 
-    #[test_only]
-    use aptos_framework::account;
-
     #[test(creator = @0x123, trader = @0x456)]
-    fun test_create_and_transfer(creator: &signer, trader: &signer) {
-        let creator_addr = signer::address_of(creator);
-        let collection = string::utf8(b"collection");
-        let name = string::utf8(b"name");
+    entry fun test_create_and_transfer(creator: &signer, trader: &signer) {
+        let collection_name = string::utf8(b"collection name");
+        let token_name = string::utf8(b"token name");
 
-        let token_id = create_token_id(&creator_addr, &collection, &name);
+        create_collection_helper(creator, *&collection_name, 1);
+        create_token_helper(creator, *&collection_name, *&token_name);
 
-        account::create_account_for_test(creator_addr);
-        object::init_store(creator);
+        let creator_address = signer::address_of(creator);
+        let token_id = derive_token_id(&creator_address, &collection_name, &token_name);
+        assert!(object::owner(token_id) == creator_address, 1);
+        object::transfer(creator, token_id, signer::address_of(trader));
+        assert!(object::owner(token_id) == signer::address_of(trader), 1);
+    }
+
+    #[test(creator = @0x123)]
+    #[expected_failure(abort_code = 0x20000, location = token_objects::collection)]
+    entry fun test_too_many_tokens(creator: &signer) {
+        let collection_name = string::utf8(b"collection name");
+        let token_name = string::utf8(b"token name");
+
+        create_collection_helper(creator, *&collection_name, 1);
+        create_token_helper(creator, *&collection_name, token_name);
+        create_token_helper(creator, collection_name, string::utf8(b"bad"));
+    }
+
+    #[test(creator = @0x123)]
+    #[expected_failure(abort_code = 0x80000, location = aptos_framework::object)]
+    entry fun test_duplicate_tokens(creator: &signer) {
+        let collection_name = string::utf8(b"collection name");
+        let token_name = string::utf8(b"token name");
+
+        create_collection_helper(creator, *&collection_name, 1);
+        create_token_helper(creator, *&collection_name, *&token_name);
+        create_token_helper(creator, collection_name, token_name);
+    }
+
+    #[test_only]
+    entry fun create_collection_helper(creator: &signer, collection_name: String, max_supply: u64) {
+        collection::create_collection(
+            creator,
+            string::utf8(b"collection description"),
+            collection_name,
+            string::utf8(b"collection uri"),
+            false,
+            false,
+            max_supply,
+            false,
+            0,
+            0,
+            signer::address_of(creator),
+        );
+    }
+
+    #[test_only]
+    entry fun create_token_helper(creator: &signer, collection_name: String, token_name: String) {
         mint_token(
             creator,
-            collection,
-            string::utf8(b"description"),
-            name,
-            string::utf8(b"uri"),
+            collection_name,
+            string::utf8(b"token description"),
+            token_name,
+            string::utf8(b"token uri"),
             false,
             false,
             false,
-            0,
-            0,
-            creator_addr,
+            true,
+            25,
+            10000,
+            signer::address_of(creator),
         );
-
-        let token = object::withdraw(creator, token_id);
-        account::create_account_for_test(signer::address_of(trader));
-        object::init_store(trader);
-        object::deposit(trader, token);
     }
 }
