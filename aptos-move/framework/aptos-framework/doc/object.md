@@ -24,6 +24,7 @@ make it so that a reference to a global object can be returned from a function.
 -  [Resource `Object`](#0x1_object_Object)
 -  [Struct `ObjectGroup`](#0x1_object_ObjectGroup)
 -  [Struct `ObjectId`](#0x1_object_ObjectId)
+-  [Struct `TypedObjectId`](#0x1_object_TypedObjectId)
 -  [Struct `CreatorRef`](#0x1_object_CreatorRef)
 -  [Struct `DeleteRef`](#0x1_object_DeleteRef)
 -  [Struct `ExtendRef`](#0x1_object_ExtendRef)
@@ -33,7 +34,12 @@ make it so that a reference to a global object can be returned from a function.
 -  [Constants](#@Constants_0)
 -  [Function `address_to_object_id`](#0x1_object_address_to_object_id)
 -  [Function `create_object_id`](#0x1_object_create_object_id)
+-  [Function `create_typed_object_id`](#0x1_object_create_typed_object_id)
+-  [Function `exists_at`](#0x1_object_exists_at)
+-  [Function `to_typed`](#0x1_object_to_typed)
+-  [Function `to_untyped`](#0x1_object_to_untyped)
 -  [Function `object_id_address`](#0x1_object_object_id_address)
+-  [Function `typed_object_id_address`](#0x1_object_typed_object_id_address)
 -  [Function `create_named_object`](#0x1_object_create_named_object)
 -  [Function `create_object_from_account`](#0x1_object_create_object_from_account)
 -  [Function `create_object_from_object`](#0x1_object_create_object_from_object)
@@ -154,10 +160,41 @@ A shared resource group for storing object resources together in storage.
 
 ## Struct `ObjectId`
 
-Type safe way of designate an object as at this address.
+Type-safe way of designate an object as at this address.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x1_object_ObjectId">ObjectId</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>inner: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_object_TypedObjectId"></a>
+
+## Struct `TypedObjectId`
+
+A typed ObjectId -- these can only provide guarantees based upon the underlying data type,
+that is the validity of T existing at an address is something that cannot be verified by
+any other module than the module that defined T. Similarly, the module that defines T can
+remove it from storage at any point in time.
+
+
+<pre><code><b>struct</b> <a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -437,6 +474,16 @@ An object already exists at this address
 
 
 
+<a name="0x1_object_ERESOURCE_DOES_NOT_EXIST"></a>
+
+The resource is not stored at the specified address.
+
+
+<pre><code><b>const</b> <a href="object.md#0x1_object_ERESOURCE_DOES_NOT_EXIST">ERESOURCE_DOES_NOT_EXIST</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="0x1_object_MAXIMUM_OBJECT_NESTING"></a>
 
 Maximum nesting from one object to another. That is objects can technically have infinte
@@ -514,6 +561,107 @@ The ObjectId needs to be distinct from create_resource_address
 
 </details>
 
+<a name="0x1_object_create_typed_object_id"></a>
+
+## Function `create_typed_object_id`
+
+Construct a TypedObjectId assuming that the entity passes in an appropriate proof that
+at least the T exists and it has the key ability. This is the strongest guarantee we can
+obtain short of adding a new native function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_typed_object_id">create_typed_object_id</a>&lt;T: key&gt;(object_id: <b>address</b>): <a href="object.md#0x1_object_TypedObjectId">object::TypedObjectId</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_typed_object_id">create_typed_object_id</a>&lt;T: key&gt;(object_id: <b>address</b>): <a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt; {
+    <b>assert</b>!(<a href="object.md#0x1_object_exists_at">exists_at</a>&lt;T&gt;(object_id), <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="object.md#0x1_object_ERESOURCE_DOES_NOT_EXIST">ERESOURCE_DOES_NOT_EXIST</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="object.md#0x1_object_Object">Object</a>&gt;(object_id), <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="object.md#0x1_object_EOBJECT_DOES_NOT_EXIST">EOBJECT_DOES_NOT_EXIST</a>));
+    <a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt; { inner: object_id }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_exists_at"></a>
+
+## Function `exists_at`
+
+
+
+<pre><code><b>fun</b> <a href="object.md#0x1_object_exists_at">exists_at</a>&lt;T: key&gt;(object_id: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="object.md#0x1_object_exists_at">exists_at</a>&lt;T: key&gt;(object_id: <b>address</b>): bool;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_to_typed"></a>
+
+## Function `to_typed`
+
+Attempts to convert an ObjectId to a TypedObjectId
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed">to_typed</a>&lt;T: key&gt;(object_id: <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>): <a href="object.md#0x1_object_TypedObjectId">object::TypedObjectId</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_typed">to_typed</a>&lt;T: key&gt;(object_id: <a href="object.md#0x1_object_ObjectId">ObjectId</a>): <a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt; {
+    <a href="object.md#0x1_object_create_typed_object_id">create_typed_object_id</a>(object_id.inner)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_to_untyped"></a>
+
+## Function `to_untyped`
+
+Converts a TypedObjectId to an ObjectId
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_untyped">to_untyped</a>&lt;T&gt;(object_id: <a href="object.md#0x1_object_TypedObjectId">object::TypedObjectId</a>&lt;T&gt;): <a href="object.md#0x1_object_ObjectId">object::ObjectId</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_to_untyped">to_untyped</a>&lt;T&gt;(object_id: <a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt;): <a href="object.md#0x1_object_ObjectId">ObjectId</a> {
+    <a href="object.md#0x1_object_ObjectId">ObjectId</a> { inner: object_id.inner }
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_object_object_id_address"></a>
 
 ## Function `object_id_address`
@@ -531,6 +679,31 @@ Returns the address of within an ObjectId.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_id_address">object_id_address</a>(object_id: &<a href="object.md#0x1_object_ObjectId">ObjectId</a>): <b>address</b> {
+    object_id.inner
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_object_typed_object_id_address"></a>
+
+## Function `typed_object_id_address`
+
+Returns the address of within a TypedObjectId.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_object_id_address">typed_object_id_address</a>&lt;T&gt;(object_id: &<a href="object.md#0x1_object_TypedObjectId">object::TypedObjectId</a>&lt;T&gt;): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_typed_object_id_address">typed_object_id_address</a>&lt;T&gt;(object_id: &<a href="object.md#0x1_object_TypedObjectId">TypedObjectId</a>&lt;T&gt;): <b>address</b> {
     object_id.inner
 }
 </code></pre>

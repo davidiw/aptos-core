@@ -39,6 +39,8 @@ module aptos_framework::object {
     const ECANNOT_DELETE: u64 = 5;
     /// Exceeds maximum nesting for an object transfer.
     const EMAXIMUM_NESTING: u64 = 6;
+    /// The resource is not stored at the specified address.
+    const ERESOURCE_DOES_NOT_EXIST: u64 = 7;
 
     /// Maximum nesting from one object to another. That is objects can technically have infinte
     /// nesting, but any checks such as transfer will only be evaluated this deep.
@@ -67,8 +69,16 @@ module aptos_framework::object {
     /// A shared resource group for storing object resources together in storage.
     struct ObjectGroup { }
 
-    /// Type safe way of designate an object as at this address.
+    /// Type-safe way of designate an object as at this address.
     struct ObjectId has copy, drop, store {
+        inner: address,
+    }
+
+    /// A typed ObjectId -- these can only provide guarantees based upon the underlying data type,
+    /// that is the validity of T existing at an address is something that cannot be verified by
+    /// any other module than the module that defined T. Similarly, the module that defines T can
+    /// remove it from storage at any point in time.
+    struct TypedObjectId<phantom T> has copy, drop, store {
         inner: address,
     }
 
@@ -123,8 +133,34 @@ module aptos_framework::object {
         ObjectId { inner: from_bcs::to_address(hash::sha3_256(bytes)) }
     }
 
+    /// Construct a TypedObjectId assuming that the entity passes in an appropriate proof that
+    /// at least the T exists and it has the key ability. This is the strongest guarantee we can
+    /// obtain short of adding a new native function.
+    public fun create_typed_object_id<T: key>(object_id: address): TypedObjectId<T> {
+        assert!(exists_at<T>(object_id), error::not_found(ERESOURCE_DOES_NOT_EXIST));
+        assert!(exists<Object>(object_id), error::not_found(EOBJECT_DOES_NOT_EXIST));
+        TypedObjectId<T> { inner: object_id }
+    }
+
+    native fun exists_at<T: key>(object_id: address): bool;
+
+    /// Attempts to convert an ObjectId to a TypedObjectId
+    public fun to_typed<T: key>(object_id: ObjectId): TypedObjectId<T> {
+        create_typed_object_id(object_id.inner)
+    }
+
+    /// Converts a TypedObjectId to an ObjectId
+    public fun to_untyped<T>(object_id: TypedObjectId<T>): ObjectId {
+        ObjectId { inner: object_id.inner }
+    }
+
     /// Returns the address of within an ObjectId.
     public fun object_id_address(object_id: &ObjectId): address {
+        object_id.inner
+    }
+
+    /// Returns the address of within a TypedObjectId.
+    public fun typed_object_id_address<T>(object_id: &TypedObjectId<T>): address {
         object_id.inner
     }
 
@@ -381,9 +417,19 @@ module aptos_framework::object {
         borrow_global<Object>(object_id.inner).owner
     }
 
+    /// Return the current owner.
+    public fun owner_t<T>(object_id: TypedObjectId<T>): address acquires Object {
+        borrow_global<Object>(object_id.inner).owner
+    }
+
     /// Return true if the provided address is the current owner.
     public fun is_owner(object_id: ObjectId, owner: address): bool acquires Object {
         owner(object_id) == owner
+    }
+
+    /// Return true if the provided address is the current owner.
+    public fun is_owner_t<T>(object_id: TypedObjectId<T>, owner: address): bool acquires Object {
+        owner_t(object_id) == owner
     }
 
     #[test_only]
@@ -396,14 +442,14 @@ module aptos_framework::object {
 
     #[test_only]
     struct HeroEquipEvent has drop, store {
-        weapon_id: Option<ObjectId>,
+        weapon_id: Option<TypedObjectId<Weapon>>,
     }
 
     #[test_only]
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Hero has key {
         equip_events: event::EventHandle<HeroEquipEvent>,
-        weapon: Option<ObjectId>,
+        weapon: Option<TypedObjectId<Weapon>>,
     }
 
     #[test_only]
@@ -411,7 +457,7 @@ module aptos_framework::object {
     struct Weapon has key { }
 
     #[test_only]
-    public fun create_hero(creator: &signer): ObjectId acquires Object {
+    public fun create_hero(creator: &signer): TypedObjectId<Hero> acquires Object {
         let hero_creator_ref = create_named_object(creator, b"hero");
         let hero_signer = generate_signer(&hero_creator_ref);
         let guid_for_equip_events = create_guid(&hero_signer);
@@ -423,25 +469,25 @@ module aptos_framework::object {
             },
         );
 
-        object_id_from_creator_ref(&hero_creator_ref)
+        to_typed<Hero>(object_id_from_creator_ref(&hero_creator_ref))
     }
 
     #[test_only]
-    public fun create_weapon(creator: &signer): ObjectId {
+    public fun create_weapon(creator: &signer): TypedObjectId<Weapon> {
         let weapon_creator_ref = create_named_object(creator, b"weapon");
         let weapon_signer = generate_signer(&weapon_creator_ref);
         move_to(&weapon_signer, Weapon { });
-        object_id_from_creator_ref(&weapon_creator_ref)
+        to_typed(object_id_from_creator_ref(&weapon_creator_ref))
     }
 
     #[test_only]
     public fun hero_equip(
         owner: &signer,
-        hero: ObjectId,
-        weapon: ObjectId,
+        hero: TypedObjectId<Hero>,
+        weapon: TypedObjectId<Weapon>,
     ) acquires Hero, Object {
-        transfer_to_object(owner, weapon, hero);
-        let hero_obj = borrow_global_mut<Hero>(object_id_address(&hero));
+        transfer_to_object(owner, to_untyped(weapon), to_untyped(hero));
+        let hero_obj = borrow_global_mut<Hero>(typed_object_id_address(&hero));
         option::fill(&mut hero_obj.weapon, weapon);
         event::emit_event(
             &mut hero_obj.equip_events,
@@ -452,11 +498,11 @@ module aptos_framework::object {
     #[test_only]
     public fun hero_unequip(
         owner: &signer,
-        hero: ObjectId,
-        weapon: ObjectId,
+        hero: TypedObjectId<Hero>,
+        weapon: TypedObjectId<Weapon>,
     ) acquires Hero, Object {
-        transfer(owner, weapon, signer::address_of(owner));
-        let hero = borrow_global_mut<Hero>(object_id_address(&hero));
+        transfer(owner, to_untyped(weapon), signer::address_of(owner));
+        let hero = borrow_global_mut<Hero>(typed_object_id_address(&hero));
         option::extract(&mut hero.weapon);
         event::emit_event(
             &mut hero.equip_events,

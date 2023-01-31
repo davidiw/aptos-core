@@ -4,7 +4,7 @@ module token_objects::hero {
     use std::signer;
     use std::string::{Self, String};
 
-    use aptos_framework::object::{Self, CreatorRef, ObjectId};
+    use aptos_framework::object::{Self, CreatorRef, TypedObjectId};
 
     use token_objects::collection;
     use token_objects::token;
@@ -23,17 +23,17 @@ module token_objects::hero {
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Hero has key {
-        armor: Option<ObjectId>,
+        armor: Option<TypedObjectId<Armor>>,
         gender: String,
         race: String,
-        shield: Option<ObjectId>,
-        weapon: Option<ObjectId>,
+        shield: Option<TypedObjectId<Shield>>,
+        weapon: Option<TypedObjectId<Weapon>>,
     }
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Armor has key {
         defense: u64,
-        gem: Option<ObjectId>,
+        gem: Option<TypedObjectId<Gem>>,
         weight: u64,
     }
 
@@ -47,14 +47,14 @@ module token_objects::hero {
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Shield has key {
         defense: u64,
-        gem: Option<ObjectId>,
+        gem: Option<TypedObjectId<Gem>>,
         weight: u64,
     }
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Weapon has key {
         attack: u64,
-        gem: Option<ObjectId>,
+        gem: Option<TypedObjectId<Gem>>,
         weapon_type: String,
         weight: u64,
     }
@@ -104,7 +104,7 @@ module token_objects::hero {
         name: String,
         race: String,
         uri: String,
-    ): ObjectId acquires OnChainConfig {
+    ): TypedObjectId<Hero> acquires OnChainConfig {
         let creator_ref = create_token(creator, description, name, uri);
         let token_signer = object::generate_signer(&creator_ref);
 
@@ -117,7 +117,7 @@ module token_objects::hero {
         };
         move_to(&token_signer, hero);
 
-        object::address_to_object_id(signer::address_of(&token_signer))
+        object::to_typed(object::address_to_object_id(signer::address_of(&token_signer)))
     }
 
     public fun create_weapon(
@@ -128,7 +128,7 @@ module token_objects::hero {
         uri: String,
         weapon_type: String,
         weight: u64,
-    ): ObjectId acquires OnChainConfig {
+    ): TypedObjectId<Weapon> acquires OnChainConfig {
         let creator_ref = create_token(creator, description, name, uri);
         let token_signer = object::generate_signer(&creator_ref);
 
@@ -140,7 +140,7 @@ module token_objects::hero {
         };
 				move_to(&token_signer, weapon);
 
-        object::address_to_object_id(signer::address_of(&token_signer))
+        object::to_typed(object::address_to_object_id(signer::address_of(&token_signer)))
     }
 
     public fun create_gem(
@@ -151,7 +151,7 @@ module token_objects::hero {
         magic_attribute: String,
         name: String,
         uri: String,
-    ): ObjectId acquires OnChainConfig {
+    ): TypedObjectId<Gem> acquires OnChainConfig {
         let creator_ref = create_token(creator, description, name, uri);
         let token_signer = object::generate_signer(&creator_ref);
 
@@ -162,55 +162,35 @@ module token_objects::hero {
         };
 				move_to(&token_signer, gem);
 
-        object::address_to_object_id(signer::address_of(&token_signer))
+        object::to_typed(object::address_to_object_id(signer::address_of(&token_signer)))
     }
 
     // Transfer wrappers
 
-    public fun hero_equip_weapon(owner: &signer, hero: ObjectId, weapon: ObjectId) acquires Hero {
-        assert!(is_hero(hero), error::invalid_argument(ENOT_A_HERO));
-        assert!(is_weapon(weapon), error::invalid_argument(ENOT_A_WEAPON));
-        let hero_obj = borrow_global_mut<Hero>(object::object_id_address(&hero));
+    public fun hero_equip_weapon(owner: &signer, hero: TypedObjectId<Hero>, weapon: TypedObjectId<Weapon>) acquires Hero {
+        let hero_obj = borrow_global_mut<Hero>(object::typed_object_id_address(&hero));
         option::fill(&mut hero_obj.weapon, weapon);
-        object::transfer_to_object(owner, weapon, hero);
+        object::transfer_to_object(owner, object::to_untyped(weapon), object::to_untyped(hero));
     }
 
-    public fun hero_unequip_weapon(owner: &signer, hero: ObjectId, weapon: ObjectId) acquires Hero {
-        assert!(is_hero(hero), error::invalid_argument(ENOT_A_HERO));
-        let hero_obj = borrow_global_mut<Hero>(object::object_id_address(&hero));
+    public fun hero_unequip_weapon(owner: &signer, hero: TypedObjectId<Hero>, weapon: TypedObjectId<Weapon>) acquires Hero {
+        let hero_obj = borrow_global_mut<Hero>(object::typed_object_id_address(&hero));
         let stored_weapon = option::extract(&mut hero_obj.weapon);
         assert!(stored_weapon == weapon, error::not_found(EINVALID_WEAPON_UNEQUIP));
-        object::transfer(owner, weapon, signer::address_of(owner));
+        object::transfer(owner, object::to_untyped(weapon), signer::address_of(owner));
     }
 
-    public fun weapon_equip_gem(owner: &signer, weapon: ObjectId, gem: ObjectId) acquires Weapon {
-        assert!(is_weapon(weapon), error::invalid_argument(ENOT_A_WEAPON));
-        assert!(is_gem(gem), error::invalid_argument(ENOT_A_GEM));
-        let weapon_obj = borrow_global_mut<Weapon>(object::object_id_address(&weapon));
+    public fun weapon_equip_gem(owner: &signer, weapon: TypedObjectId<Weapon>, gem: TypedObjectId<Gem>) acquires Weapon {
+        let weapon_obj = borrow_global_mut<Weapon>(object::typed_object_id_address(&weapon));
         option::fill(&mut weapon_obj.gem, gem);
-        object::transfer_to_object(owner, gem, weapon);
+        object::transfer_to_object(owner, object::to_untyped(gem), object::to_untyped(weapon));
     }
 
-    public fun weapon_unequip_gem(owner: &signer, weapon: ObjectId, gem: ObjectId) acquires Weapon {
-        assert!(is_weapon(weapon), error::invalid_argument(ENOT_A_WEAPON));
-        let weapon_obj = borrow_global_mut<Weapon>(object::object_id_address(&weapon));
+    public fun weapon_unequip_gem(owner: &signer, weapon: TypedObjectId<Weapon>, gem: TypedObjectId<Gem>) acquires Weapon {
+        let weapon_obj = borrow_global_mut<Weapon>(object::typed_object_id_address(&weapon));
         let stored_gem = option::extract(&mut weapon_obj.gem);
         assert!(stored_gem == gem, error::not_found(EINVALID_GEM_UNEQUIP));
-        object::transfer(owner, gem, signer::address_of(owner));
-    }
-
-    // Accessors
-
-    public fun is_gem(gem: ObjectId): bool {
-        exists<Gem>(object::object_id_address(&gem))
-    }
-
-    public fun is_hero(hero: ObjectId): bool {
-        exists<Hero>(object::object_id_address(&hero))
-    }
-
-    public fun is_weapon(weapon: ObjectId): bool {
-        exists<Weapon>(object::object_id_address(&weapon))
+        object::transfer(owner, object::to_untyped(gem), signer::address_of(owner));
     }
 
     // Entry functions
@@ -260,28 +240,28 @@ module token_objects::hero {
         );
 
         let account_address = signer::address_of(account);
-        assert!(object::is_owner(hero, account_address), 0);
-        assert!(object::is_owner(weapon, account_address), 1);
-        assert!(object::is_owner(gem, account_address), 2);
+        assert!(object::is_owner_t(hero, account_address), 0);
+        assert!(object::is_owner_t(weapon, account_address), 1);
+        assert!(object::is_owner_t(gem, account_address), 2);
 
         hero_equip_weapon(account, hero, weapon);
-        assert!(object::is_owner(hero, account_address), 3);
-        assert!(object::is_owner(weapon, object::object_id_address(&hero)), 4);
-        assert!(object::is_owner(gem, account_address), 5);
+        assert!(object::is_owner_t(hero, account_address), 3);
+        assert!(object::is_owner_t(weapon, object::typed_object_id_address(&hero)), 4);
+        assert!(object::is_owner_t(gem, account_address), 5);
 
         weapon_equip_gem(account, weapon, gem);
-        assert!(object::is_owner(hero, account_address), 6);
-        assert!(object::is_owner(weapon, object::object_id_address(&hero)), 7);
-        assert!(object::is_owner(gem, object::object_id_address(&weapon)), 8);
+        assert!(object::is_owner_t(hero, account_address), 6);
+        assert!(object::is_owner_t(weapon, object::typed_object_id_address(&hero)), 7);
+        assert!(object::is_owner_t(gem, object::typed_object_id_address(&weapon)), 8);
 
         hero_unequip_weapon(account, hero, weapon);
-        assert!(object::is_owner(hero, account_address), 9);
-        assert!(object::is_owner(weapon, account_address), 10);
-        assert!(object::is_owner(gem, object::object_id_address(&weapon)), 11);
+        assert!(object::is_owner_t(hero, account_address), 9);
+        assert!(object::is_owner_t(weapon, account_address), 10);
+        assert!(object::is_owner_t(gem, object::typed_object_id_address(&weapon)), 11);
 
         weapon_unequip_gem(account, weapon, gem);
-        assert!(object::is_owner(hero, account_address), 12);
-        assert!(object::is_owner(weapon, account_address), 13);
-        assert!(object::is_owner(gem, account_address), 14);
+        assert!(object::is_owner_t(hero, account_address), 12);
+        assert!(object::is_owner_t(weapon, account_address), 13);
+        assert!(object::is_owner_t(gem, account_address), 14);
     }
 }
